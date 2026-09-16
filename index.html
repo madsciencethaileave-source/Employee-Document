@@ -42,79 +42,12 @@
 </div>
 <script>
 const LIFF_ID='2011365656-uKz3o9We';
-const WEB_APP_URL='https://script.google.com/macros/s/AKfycbxdoowD030YW2f-wYsbcDByKOU4kZ47fA2c3yRzokRJG0Mjzu6jXYWZFfO38YCugxHZ/exec';
-
-
-async function checkAppsScriptHealth(){
-  try{
-    const r = await fetch(WEB_APP_URL + '?api=health', {
-      method:'GET',
-      cache:'no-store'
-    });
-    const text = await r.text();
-    if(!r.ok){
-      return {
-        success:false,
-        httpStatus:r.status,
-        url:WEB_APP_URL,
-        response:text.slice(0,500)
-      };
-    }
-    try{
-      return JSON.parse(text);
-    }catch(e){
-      return {
-        success:false,
-        httpStatus:r.status,
-        url:WEB_APP_URL,
-        response:text.slice(0,500),
-        message:'Endpoint ตอบกลับไม่ใช่ JSON'
-      };
-    }
-  }catch(err){
-    return {
-      success:false,
-      httpStatus:0,
-      url:WEB_APP_URL,
-      response:String(err && err.message ? err.message : err)
-    };
-  }
-}
+const WEB_APP_URL='https://script.google.com/macros/s/AKfycby3o_CDLUCmMU0C0Vf8Q1whF98a4Jjc4u3BTiWqN1kgU2u5_lgtUO1hWxL2ivP6K9IW/exec';
 let idToken='', calendarData=[], holidays=[];
 const monthNames=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 function msg(t,ok=false){const e=document.getElementById('message');e.className=ok?'success':'error';e.textContent=t;e.style.display='block'}
-async function api(action,extra={}){
- let responseText='';
- try{
-  const r=await fetch(WEB_APP_URL,{
-   method:'POST',
-   headers:{'Content-Type':'text/plain;charset=utf-8'},
-   body:JSON.stringify({action,idToken,...extra})
-  });
-  responseText=await r.text();
-  if(!r.ok){
-   throw new Error(
-    'Apps Script API error: HTTP '+r.status+
-    '\nAction: '+action+
-    '\nURL: '+WEB_APP_URL+
-    '\nResponse: '+responseText.slice(0,500)
-   );
-  }
-  try{return JSON.parse(responseText);}
-  catch(e){
-   throw new Error(
-    'Apps Script ตอบกลับไม่ใช่ JSON'+
-    '\nAction: '+action+
-    '\nURL: '+WEB_APP_URL+
-    '\nResponse: '+responseText.slice(0,500)
-   );
-  }
- }catch(err){
-  console.error('API CALL ERROR',{action,url:WEB_APP_URL,response:responseText,error:err});
-  throw err;
- }
-}
+async function api(action,extra={}){const r=await fetch(WEB_APP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,idToken,...extra})});if(!r.ok)throw new Error('Apps Script API error: HTTP '+r.status);return r.json()}
 function ym(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
 function initSelectors(){
  const now=new Date();
@@ -176,14 +109,14 @@ function renderCalendar(v){
     e.className='day';
     if(key===new Date().toISOString().slice(0,10)) e.classList.add('today');
 
-    // Calendar cells intentionally show only the date number and status icons.
-    // Details are shown after tapping a day, so no status text is rendered inside the cell.
     e.innerHTML='<div class="num">'+d+'</div><div class="dotrow">'+
-      (x.checkIn||x.checkOut?'<i class="dot att" title="Check In/Out"></i>':'')+
-      (x.leave?.length?'<i class="dot leave" title="Leave อนุมัติ"></i>':'')+
-      (x.ot?.length?'<i class="dot ot" title="OT อนุมัติ"></i>':'')+
-      (holiday?'<i class="dot holiday" title="วันหยุด"></i>':'')+
-      '</div>';
+      (x.checkIn||x.checkOut?'<i class="dot att"></i>':'')+
+      (x.leave?.length?'<i class="dot leave"></i>':'')+
+      (x.ot?.length?'<i class="dot ot"></i>':'')+
+      (holiday?'<i class="dot holiday"></i>':'')+
+      '</div>'+
+      (holiday?'<div class="mini">'+esc(holiday.holiday||'วันหยุด')+'</div>':'')+
+      ((x.checkIn||x.checkOut)&&!holiday?'<div class="mini">'+esc(x.checkIn||'-')+' / '+esc(x.checkOut||'-')+'</div>':'');
     e.onclick=()=>showDay(x);
     box.appendChild(e);
   }
