@@ -109,14 +109,14 @@ function renderCalendar(v){
     e.className='day';
     if(key===new Date().toISOString().slice(0,10)) e.classList.add('today');
 
+    // Calendar cells show only the date number and status icons.
+    // All details remain available when the user taps the date.
     e.innerHTML='<div class="num">'+d+'</div><div class="dotrow">'+
       (x.checkIn||x.checkOut?'<i class="dot att"></i>':'')+
       (x.leave?.length?'<i class="dot leave"></i>':'')+
       (x.ot?.length?'<i class="dot ot"></i>':'')+
       (holiday?'<i class="dot holiday"></i>':'')+
-      '</div>'+
-      (holiday?'<div class="mini">'+esc(holiday.holiday||'วันหยุด')+'</div>':'')+
-      ((x.checkIn||x.checkOut)&&!holiday?'<div class="mini">'+esc(x.checkIn||'-')+' / '+esc(x.checkOut||'-')+'</div>':'');
+      '</div>';
     e.onclick=()=>showDay(x);
     box.appendChild(e);
   }
