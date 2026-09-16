@@ -42,12 +42,79 @@
 </div>
 <script>
 const LIFF_ID='2011365656-uKz3o9We';
-const WEB_APP_URL='https://script.google.com/macros/s/AKfycbw2WhujlJaTHhbOT3ObgCuSDwxx_QiLPW5a2wXx3DeUKd8N7y4JPl5Kn8P7AAHhYBNG/exec';
+const WEB_APP_URL='https://script.google.com/macros/s/AKfycbxRWbpEa7h_WlMvKjCeQCa73XJfC7EV4X7CfMO7uY2Tq7qrJ6HKFxWw5WLUI9VfWWu3/exec';
+
+
+async function checkAppsScriptHealth(){
+  try{
+    const r = await fetch(WEB_APP_URL + '?api=health', {
+      method:'GET',
+      cache:'no-store'
+    });
+    const text = await r.text();
+    if(!r.ok){
+      return {
+        success:false,
+        httpStatus:r.status,
+        url:WEB_APP_URL,
+        response:text.slice(0,500)
+      };
+    }
+    try{
+      return JSON.parse(text);
+    }catch(e){
+      return {
+        success:false,
+        httpStatus:r.status,
+        url:WEB_APP_URL,
+        response:text.slice(0,500),
+        message:'Endpoint ตอบกลับไม่ใช่ JSON'
+      };
+    }
+  }catch(err){
+    return {
+      success:false,
+      httpStatus:0,
+      url:WEB_APP_URL,
+      response:String(err && err.message ? err.message : err)
+    };
+  }
+}
 let idToken='', calendarData=[], holidays=[];
 const monthNames=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 function msg(t,ok=false){const e=document.getElementById('message');e.className=ok?'success':'error';e.textContent=t;e.style.display='block'}
-async function api(action,extra={}){const r=await fetch(WEB_APP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,idToken,...extra})});if(!r.ok)throw new Error('Apps Script API error: HTTP '+r.status);return r.json()}
+async function api(action,extra={}){
+ let responseText='';
+ try{
+  const r=await fetch(WEB_APP_URL,{
+   method:'POST',
+   headers:{'Content-Type':'text/plain;charset=utf-8'},
+   body:JSON.stringify({action,idToken,...extra})
+  });
+  responseText=await r.text();
+  if(!r.ok){
+   throw new Error(
+    'Apps Script API error: HTTP '+r.status+
+    '\nAction: '+action+
+    '\nURL: '+WEB_APP_URL+
+    '\nResponse: '+responseText.slice(0,500)
+   );
+  }
+  try{return JSON.parse(responseText);}
+  catch(e){
+   throw new Error(
+    'Apps Script ตอบกลับไม่ใช่ JSON'+
+    '\nAction: '+action+
+    '\nURL: '+WEB_APP_URL+
+    '\nResponse: '+responseText.slice(0,500)
+   );
+  }
+ }catch(err){
+  console.error('API CALL ERROR',{action,url:WEB_APP_URL,response:responseText,error:err});
+  throw err;
+ }
+}
 function ym(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
 function initSelectors(){
  const now=new Date();
