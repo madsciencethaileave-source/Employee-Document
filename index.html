@@ -176,14 +176,14 @@ function renderCalendar(v){
     e.className='day';
     if(key===new Date().toISOString().slice(0,10)) e.classList.add('today');
 
+    // Calendar cells intentionally show only the date number and status icons.
+    // Details are shown after tapping a day, so no status text is rendered inside the cell.
     e.innerHTML='<div class="num">'+d+'</div><div class="dotrow">'+
-      (x.checkIn||x.checkOut?'<i class="dot att"></i>':'')+
-      (x.leave?.length?'<i class="dot leave"></i>':'')+
-      (x.ot?.length?'<i class="dot ot"></i>':'')+
-      (holiday?'<i class="dot holiday"></i>':'')+
-      '</div>'+
-      (holiday?'<div class="mini">'+esc(holiday.holiday||'วันหยุด')+'</div>':'')+
-      ((x.checkIn||x.checkOut)&&!holiday?'<div class="mini">'+esc(x.checkIn||'-')+' / '+esc(x.checkOut||'-')+'</div>':'');
+      (x.checkIn||x.checkOut?'<i class="dot att" title="Check In/Out"></i>':'')+
+      (x.leave?.length?'<i class="dot leave" title="Leave อนุมัติ"></i>':'')+
+      (x.ot?.length?'<i class="dot ot" title="OT อนุมัติ"></i>':'')+
+      (holiday?'<i class="dot holiday" title="วันหยุด"></i>':'')+
+      '</div>';
     e.onclick=()=>showDay(x);
     box.appendChild(e);
   }
