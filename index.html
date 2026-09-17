@@ -58,7 +58,7 @@
 </div>
 <script>
 const LIFF_ID='2011365656-uKz3o9We';
-const WEB_APP_URL='https://script.google.com/macros/s/AKfycbxcxk4RPUVDBBvYDUvdmotYf48pxIlbfO7Mc7MgvAa9h_HH5ALPttrgowivcpFBREYR/exec';
+const WEB_APP_URL='https://script.google.com/macros/s/AKfycbwgpRffMuwzDPxzaZPzpkITjVtmgS1pnudhlUp9q04twJgyDKBOVuzz22qv3nLwlB9t/exec';
 let idToken='', calendarData=[], holidays=[], approvalData={pending:[],history:[],canApprove:false};
 const monthNames=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -76,10 +76,12 @@ function monthShift(v,n){const [y,m]=v.split('-').map(Number);return ym(new Date
 async function loadCalendar(){
   const v=document.getElementById('calendarMonth').value;
   document.getElementById('calendar').innerHTML='<div class="loading">กำลังโหลด...</div>';
+  document.getElementById('dayDetail').classList.add('hidden');
   try{
     const r=await api('getEmployeeCalendar',{month:v});
     if(!r.success) throw new Error(r.message);
     calendarData=r.days||[];
+    holidays=(r.holidays||[]);
 
     renderCalendar(v);
   }catch(e){msg(e.message)}
@@ -132,7 +134,10 @@ function renderCalendar(v){
     box.appendChild(e);
   }
 }
-function showDay(x){const e=document.getElementById('dayDetail');let h='<h3>'+esc(x.date)+'</h3>';h+='<div class="row"><span>Check In</span><b>'+esc(x.checkIn||'-')+'</b></div><div class="row"><span>Check Out</span><b>'+esc(x.checkOut||'-')+'</b></div>';h+='<div class="row"><span>สถานะงาน</span><span class="badge">'+esc(x.attendanceStatus||'-')+'</span></div>';if(x.holiday)h+='<div class="row"><span>วันหยุด</span><b>'+esc(x.holiday.holiday||'วันหยุด')+'</b></div>';h+='<div class="row"><span>Leave ที่อนุมัติ</span><b>'+((x.leave||[]).length||'-')+'</b></div>';(x.leave||[]).forEach(a=>h+='<div class="small muted">• '+esc(a.type)+' '+esc(a.reason||'')+'</div>');h+='<div class="row"><span>OT ที่อนุมัติ</span><b>'+((x.ot||[]).length||'-')+'</b></div>';(x.ot||[]).forEach(a=>h+='<div class="small muted">• '+esc(a.start)+' - '+esc(a.end)+' ('+Number(a.hours||0).toFixed(2)+' ชม.) '+esc(a.reason||'')+'</div>');e.innerHTML=h;e.classList.remove('hidden')}
+function showDay(x){const e=document.getElementById('dayDetail');let h='<h3>'+esc(x.date)+'</h3>';h+='<div class="row"><span>Check In</span><b>'+esc(x.checkIn||'-')+'</b></div><div class="row"><span>Check Out</span><b>'+esc(x.checkOut||'-')+'</b></div>';h+='<div class="row"><span>สถานะงาน</span><span class="badge">'+esc(x.attendanceStatus||'-')+'</span></div>';if(x.holiday){
+  h+='<div class="row"><span>วันหยุด</span><b>'+esc(x.holiday.holiday||'วันหยุด')+'</b></div>';
+  if(x.holiday.description) h+='<div class="small muted">'+esc(x.holiday.description)+'</div>';
+}h+='<div class="row"><span>Leave ที่อนุมัติ</span><b>'+((x.leave||[]).length||'-')+'</b></div>';(x.leave||[]).forEach(a=>h+='<div class="small muted">• '+esc(a.type)+' '+esc(a.reason||'')+'</div>');h+='<div class="row"><span>OT ที่อนุมัติ</span><b>'+((x.ot||[]).length||'-')+'</b></div>';(x.ot||[]).forEach(a=>h+='<div class="small muted">• '+esc(a.start)+' - '+esc(a.end)+' ('+Number(a.hours||0).toFixed(2)+' ชม.) '+esc(a.reason||'')+'</div>');e.innerHTML=h;e.classList.remove('hidden')}
 async function loadHolidays(){const box=document.getElementById('holidayList');box.innerHTML='<div class="loading">กำลังโหลด...</div>';try{const r=await api('getAnnualHolidays');if(!r.success)throw new Error(r.message);holidays=r.items||[];const y=String(document.getElementById('holidayYear').value);const list=holidays.filter(x=>normalizeDate(x.date).startsWith(y+'-'));box.innerHTML=list.length?list.map(x=>'<div class="holiday-item"><strong>'+esc(x.holiday||'-')+'</strong><span>'+esc(x.date)+'</span>'+(x.description?'<div class="small muted">'+esc(x.description)+'</div>':'')+'</div>').join(''):'ไม่มีวันหยุดที่เปิดใช้งานในปีนี้';}catch(e){box.innerHTML='';msg(e.message)}}
 async function loadPayslip(){const box=document.getElementById('payslip');box.innerHTML='<div class="loading">กำลังคำนวณ...</div>';try{const r=await api('getPayslip',{month:document.getElementById('payslipMonth').value});if(!r.success)throw new Error(r.message);box.innerHTML='<div><h2 style="margin:0">สลิปเงินเดือน</h2><div class="muted">'+esc(monthNames[Number(r.month.split('-')[1])-1]+' '+(Number(r.month.slice(0,4))+543))+'</div></div><div class="row"><span>พนักงาน</span><b>'+esc(r.employee.employeeName)+'</b></div><div class="row"><span>รหัสพนักงาน</span><span>'+esc(r.employee.employeeId)+'</span></div><div class="row"><span>เงินเดือนพื้นฐาน</span><b>'+Number(r.salary||0).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</b></div><div style="margin-top:10px"><b>Benefits Claim ที่อนุมัติแล้ว</b></div><div class="list" style="margin-top:8px">'+(r.benefits.length?r.benefits.map(x=>'<div class="claim"><strong>'+esc(x.type)+' · '+Number(x.amount).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</strong><span>'+esc(x.date)+' · '+esc(x.description)+'</span><div class="small">'+esc(x.claimId)+'</div></div>').join(''):'<div class="muted">ไม่มี Benefits Claim ที่อนุมัติในเดือนนี้</div>')+'</div><div class="payslip-total" style="margin-top:12px"><div class="stat"><div class="muted">รวมรายได้ (Gross)</div><div class="money">'+Number(r.grossSalary).toLocaleString('th-TH',{minimumFractionDigits:2})+'</div></div><div class="stat"><div class="muted">ประกันสังคม</div><div class="money">-'+Number(r.socialSecurity).toLocaleString('th-TH',{minimumFractionDigits:2})+'</div></div></div><div class="stat" style="margin-top:8px"><div class="muted">ฐานคำนวณประกันสังคม</div><b>'+Number(r.socialSecurityBase).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท × 5%</b></div><div class="stat" style="margin-top:8px"><div class="muted">เงินรับสุทธิ</div><div class="money">'+Number(r.netSalary).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</div></div>'}catch(e){box.innerHTML='';msg(e.message)}}
 function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.page===id));if(id==='calendarPage')loadCalendar();if(id==='approvalPage')loadApprovals()}
