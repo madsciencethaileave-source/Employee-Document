@@ -214,14 +214,15 @@ function approvalCard(item, isHistory){
   h+='<div class="approval-meta">';
   h+='<div><b>พนักงาน:</b> '+esc(item.employeeName)+' ('+esc(item.employeeId)+')</div>';
   h+='<div><b>แผนก:</b> '+esc(item.department||'-')+'</div>';
-  h+='<div><b>วันที่:</b> '+esc(item.date||'-')+'</div>';
+  // History ต้องแสดง "วันที่" เป็นวัน-เวลาในการดำเนินการ ไม่ใช่ Date ของรายการที่มักเป็น 00:00:00
+  h+='<div><b>วันที่:</b> '+esc(isHistory ? formatApprovalActionAt(item.actionAt || item.date) : formatApprovalActionAt(item.date))+'</div>';
   h+='<div><b>รายการ:</b> '+esc(item.detail||'-')+'</div>';
   h+='<div><b>จำนวน/ยอด:</b> '+esc(item.amount||'-')+'</div>';
   h+='<div><b>'+((item.type==='Expense')?'วัตถุประสงค์':'เหตุผล')+':</b> '+esc(item.reason||'-')+'</div>';
   h+='</div>';
   if(item.type==='Expense') h+='<button class="secondary" style="width:100%;margin-top:10px" onclick="toggleApprovalDetail(this,\''+safeId+'\')">🔎 ดูรายละเอียดการเบิก</button><div class="approval-detail" style="display:none"></div>';
   if(isHistory){
-    h+='<div class="small muted" style="margin-top:9px">เวลาดำเนินการ: '+esc(formatApprovalActionAt(item.actionAt))+' · '+esc(item.actionBy||'-')+'</div>';
+    h+='<div class="small muted" style="margin-top:9px">ดำเนินการโดย: '+esc(item.actionBy||'-')+'</div>';
     if(item.rejectionReason) h+='<div class="history-comment"><b>เหตุผลที่ไม่อนุมัติ:</b> '+esc(item.rejectionReason)+'</div>';
     else if(item.comment) h+='<div class="history-comment"><b>หมายเหตุ:</b> '+esc(item.comment)+'</div>';
   }else{
