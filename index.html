@@ -47,6 +47,7 @@
       </div>
     </div>
     <div class="card">
+      <div class="toolbar" style="margin-bottom:10px"><label style="font-weight:700">เดือนที่แสดง</label><input class="select" type="month" id="approvalMonth"></div>
       <h3 style="margin:0 0 10px">รอดำเนินการ <span class="badge" id="pendingCount">0</span></h3>
       <div id="approvalPending" class="list"><div class="loading">กำลังโหลด...</div></div>
     </div>
@@ -58,7 +59,7 @@
 </div>
 <script>
 const LIFF_ID='2011365656-uKz3o9We';
-const WEB_APP_URL='https://script.google.com/macros/s/AKfycbzsk-HLcGHzlmuiBgFJbKGyeHPvj-0Yt9LTXWifALVZ1lP5Qp2lAndIyIQd3q90TE5D/exec';
+const WEB_APP_URL='https://script.google.com/macros/s/AKfycby53Bp68mhyIebrh5hVsS4hCGLU9EX1j35LFSfNe457RVjShIDhI6PgGYBOSif0lTMU/exec';
 let idToken='', calendarData=[], holidays=[], workSchedules=[], approvalData={pending:[],history:[],canApprove:false};
 const monthNames=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -177,7 +178,7 @@ async function loadHolidays(){const box=document.getElementById('holidayList');b
 async function loadPayslip(){const box=document.getElementById('payslip');box.innerHTML='<div class="loading">กำลังคำนวณ...</div>';try{const r=await api('getPayslip',{month:document.getElementById('payslipMonth').value});if(!r.success)throw new Error(r.message);box.innerHTML='<div><h2 style="margin:0">สลิปเงินเดือน</h2><div class="muted">'+esc(monthNames[Number(r.month.split('-')[1])-1]+' '+(Number(r.month.slice(0,4))+543))+'</div></div><div class="row"><span>พนักงาน</span><b>'+esc(r.employee.employeeName)+'</b></div><div class="row"><span>รหัสพนักงาน</span><span>'+esc(r.employee.employeeId)+'</span></div><div class="row"><span>เงินเดือนพื้นฐาน</span><b>'+Number(r.salary||0).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</b></div><div style="margin-top:10px"><b>Benefits Claim ที่อนุมัติแล้ว</b></div><div class="list" style="margin-top:8px">'+(r.benefits.length?r.benefits.map(x=>'<div class="claim"><strong>'+esc(x.type)+' · '+Number(x.amount).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</strong><span>'+esc(x.date)+' · '+esc(x.description)+'</span><div class="small">'+esc(x.claimId)+'</div></div>').join(''):'<div class="muted">ไม่มี Benefits Claim ที่อนุมัติในเดือนนี้</div>')+'</div><div class="payslip-total" style="margin-top:12px"><div class="stat"><div class="muted">รวมรายได้ (Gross)</div><div class="money">'+Number(r.grossSalary).toLocaleString('th-TH',{minimumFractionDigits:2})+'</div></div><div class="stat"><div class="muted">ประกันสังคม</div><div class="money">-'+Number(r.socialSecurity).toLocaleString('th-TH',{minimumFractionDigits:2})+'</div></div></div><div class="stat" style="margin-top:8px"><div class="muted">ฐานคำนวณประกันสังคม</div><b>'+Number(r.socialSecurityBase).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท × 5%</b></div><div class="stat" style="margin-top:8px"><div class="muted">เงินรับสุทธิ</div><div class="money">'+Number(r.netSalary).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</div></div>'}catch(e){box.innerHTML='';msg(e.message)}}
 function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.page===id));if(id==='calendarPage')loadCalendar();if(id==='approvalPage')loadApprovals()}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
-document.getElementById('prevMonth').onclick=()=>{document.getElementById('calendarMonth').value=monthShift(document.getElementById('calendarMonth').value,-1);loadCalendar()};document.getElementById('nextMonth').onclick=()=>{document.getElementById('calendarMonth').value=monthShift(document.getElementById('calendarMonth').value,1);loadCalendar()};document.getElementById('calendarMonth').onchange=loadCalendar;document.getElementById('refreshApproval').onclick=loadApprovals;document.getElementById('loadPayslip').onclick=loadPayslip;
+document.getElementById('prevMonth').onclick=()=>{document.getElementById('calendarMonth').value=monthShift(document.getElementById('calendarMonth').value,-1);loadCalendar()};document.getElementById('nextMonth').onclick=()=>{document.getElementById('calendarMonth').value=monthShift(document.getElementById('calendarMonth').value,1);loadCalendar()};document.getElementById('calendarMonth').onchange=loadCalendar;document.getElementById('refreshApproval').onclick=loadApprovals;document.getElementById('approvalMonth').onchange=renderApprovalLists;document.getElementById('loadPayslip').onclick=loadPayslip;
 
 function statusBadge(status){
   const s=String(status||'');
@@ -202,9 +203,8 @@ function formatApprovalActionAt(value){
 
   if(!d || isNaN(d.getTime())) return s;
 
-  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  return d.getDate()+' '+months[d.getMonth()]+' '+(d.getFullYear()+543)+
-    ' เวลา '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()+
+    ' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 
 function approvalCard(item, isHistory){
@@ -219,6 +219,7 @@ function approvalCard(item, isHistory){
   h+='<div><b>จำนวน/ยอด:</b> '+esc(item.amount||'-')+'</div>';
   h+='<div><b>'+((item.type==='Expense')?'วัตถุประสงค์':'เหตุผล')+':</b> '+esc(item.reason||'-')+'</div>';
   h+='</div>';
+  if(item.type==='Expense') h+='<button class="secondary" style="width:100%;margin-top:10px" onclick="toggleApprovalDetail(this,\''+safeId+'\')">🔎 ดูรายละเอียดการเบิก</button><div class="approval-detail" style="display:none"></div>';
   if(isHistory){
     h+='<div class="small muted" style="margin-top:9px">เวลาดำเนินการ: '+esc(formatApprovalActionAt(item.actionAt))+' · '+esc(item.actionBy||'-')+'</div>';
     if(item.rejectionReason) h+='<div class="history-comment"><b>เหตุผลที่ไม่อนุมัติ:</b> '+esc(item.rejectionReason)+'</div>';
@@ -230,6 +231,38 @@ function approvalCard(item, isHistory){
   return h+'</div>';
 }
 
+function approvalMonthMatch(item, month){
+  if(!month) return true;
+  const source=String(item.createdAt||'').slice(0,7);
+  return source===month;
+}
+function renderApprovalLists(){
+  const month=document.getElementById('approvalMonth')?.value||'';
+  const pending=(approvalData.pending||[]).filter(x=>approvalMonthMatch(x,month));
+  const history=(approvalData.history||[]).filter(x=>approvalMonthMatch(x,month));
+  document.getElementById('pendingCount').textContent=pending.length;
+  document.getElementById('approvalPending').innerHTML=pending.length?pending.map(x=>approvalCard(x,false)).join(''):'<div class="muted">ไม่มีรายการที่ตรงกับเดือนที่เลือก</div>';
+  document.getElementById('approvalHistory').innerHTML=history.length?history.map(x=>approvalCard(x,true)).join(''):'<div class="muted">ไม่มีประวัติที่ตรงกับเดือนที่เลือก</div>';
+}
+async function toggleApprovalDetail(btn, expenseId){
+  const box=btn.nextElementSibling;
+  if(box.style.display!=='none'){box.style.display='none';btn.textContent='🔎 ดูรายละเอียดการเบิก';return;}
+  box.style.display='block';
+  box.innerHTML='<div class="loading">กำลังโหลดรายละเอียด...</div>';
+  try{
+    const r=await api('getExpenseDetail',{expenseId:expenseId});
+    if(!r.success) throw new Error(r.message||'โหลดรายละเอียดไม่สำเร็จ');
+    const x=r.expense||{};
+    const items=x.items||[];
+    box.innerHTML='<div class="detail"><h3 style="margin:0 0 8px">รายละเอียดใบเบิก</h3>'+
+      '<div class="row"><span>เลขที่</span><b>'+esc(x.expenseId)+'</b></div>'+
+      '<div class="row"><span>วันที่</span><b>'+esc(x.date||'-')+'</b></div>'+
+      '<div class="row"><span>วัตถุประสงค์</span><span>'+esc(x.purpose||'-')+'</span></div>'+
+      items.map(it=>'<div class="row"><span>รายการ '+esc(it.itemNo)+' · '+esc(it.expenseType||'-')+'<br><small>'+esc(it.expenseDate||'')+'</small></span><b>'+Number(it.amount||0).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</b></div>').join('')+
+      '<div class="row"><span>รวม</span><b>'+Number(x.total||0).toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</b></div></div>';
+    btn.textContent='🔼 ซ่อนรายละเอียด';
+  }catch(e){box.innerHTML='<div class="error">'+esc(e.message||e)+'</div>';}
+}
 function toggleRejectBox(btn){
   const box=btn.parentElement.nextElementSibling;
   box.classList.toggle('show');
@@ -262,9 +295,8 @@ async function loadApprovals(){
     if(!r.success) throw new Error(r.message);
     approvalData=r;
     document.getElementById('approvalUserRole').textContent='Role: '+(r.role||'-')+' · รอ '+((r.pending||[]).length)+' รายการ';
-    document.getElementById('pendingCount').textContent=(r.pending||[]).length;
-    pendingBox.innerHTML=r.pending&&r.pending.length?r.pending.map(x=>approvalCard(x,false)).join(''):'<div class="muted">ไม่มีรายการที่รออนุมัติ</div>';
-    historyBox.innerHTML=r.history&&r.history.length?r.history.map(x=>approvalCard(x,true)).join(''):'<div class="muted">ยังไม่มีประวัติการดำเนินการ</div>';
+    if(!document.getElementById('approvalMonth').value) document.getElementById('approvalMonth').value=ym(new Date());
+    renderApprovalLists();
   }catch(e){
     pendingBox.innerHTML='<div class="muted">ไม่สามารถโหลดรายการอนุมัติ</div>';
     historyBox.innerHTML='<div class="muted">-</div>';
